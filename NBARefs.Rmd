@@ -1,0 +1,112 @@
+---
+title: "NBARefs"
+author: "JMeerse"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+
+
+```
+#get data via csv files
+```{r}
+RegularSeasonTotal1920 <- read_csv("201920RegularSeasonTotal.csv")
+
+rs1920 <- RegularSeasonTotal1920 #make the name easier
+
+remove(RegularSeasonTotal1920)
+
+p1920 <- read_csv("201920PlayoffsTotal.csv") 
+
+#only use what we're interested in
+rs1920 <- rs1920 %>% select(Season, Referee, Games, `Total fouls`,  Personal, `Loose ball`, `Offensive charge`, Shooting, Technical, `Defensive 3 seconds`, Offensive)
+
+```
+
+#convert to per game and z-scores
+```{r}
+
+#filter out refs with only a few games?
+rs1920 %>% ggplot(aes(x = Games)) + geom_dotplot() 
+#looks like n > 20, as there's 8 refs with 20 or fewer games
+
+rs1920 <- rs1920 %>% filter(Games > 20)
+
+#convert everything to fouls per game
+rs1920$All_fouls = rs1920$`Total fouls` / rs1920$Games
+rs1920$Personal = rs1920$Personal / rs1920$Games
+rs1920$`Loose ball` = rs1920$`Loose ball` / rs1920$Games
+rs1920$`Offensive charge` = rs1920$`Offensive charge` / rs1920$Games
+rs1920$Shooting = rs1920$Shooting / rs1920$Games
+rs1920$Technical = rs1920$Technical / rs1920$Games
+rs1920$Def_3_seconds = rs1920$`Defensive 3 seconds` / rs1920$Games
+rs1920$Offensive = rs1920$Offensive / rs1920$Games
+
+rs1920 = subset(rs1920, select = -c(`Defensive 3 seconds`)) #remove the original def 3 sec b/c we renamed it
+
+#now make z-scores
+rs1920$All_fouls = (rs1920$All_fouls - mean(rs1920$All_fouls)) / sd(rs1920$All_fouls)
+rs1920$Personal = (rs1920$Personal - mean(rs1920$Personal)) / sd(rs1920$Personal)
+rs1920$`Loose ball` = (rs1920$`Loose ball` - mean(rs1920$`Loose ball`)) / sd(rs1920$`Loose ball`)
+rs1920$`Offensive charge` = (rs1920$`Offensive charge` - mean(rs1920$`Offensive charge`)) / sd(rs1920$`Offensive charge`)
+rs1920$Shooting = (rs1920$Shooting - mean(rs1920$Shooting)) / sd(rs1920$Shooting)
+rs1920$Technical = (rs1920$Technical - mean(rs1920$Technical)) / sd(rs1920$Technical)
+rs1920$Def_3_seconds = (rs1920$Def_3_seconds - mean(rs1920$Def_3_seconds)) / sd(rs1920$Def_3_seconds)
+rs1920$Offensive = (rs1920$Offensive - mean(rs1920$Offensive)) / sd(rs1920$Offensive)
+
+#separate to classify each type of foul, then rejoin
+p <- rs1920 %>% select(Referee, Personal)
+p$type = "Personal"
+p <- p %>% rename(z = Personal)
+
+a <- rs1920 %>% select(Referee, All_fouls)
+a$type = "All_fouls"
+a <- a %>% rename(z = All_fouls)
+
+l <- rs1920 %>% select(Referee, `Loose ball`)
+l$type = "Loose_ball"
+l <- l %>% rename(z = `Loose ball`)
+
+o <- rs1920 %>% select(Referee, `Offensive charge`)
+o$type = "Offensive_charge"
+o <- o %>% rename(z = `Offensive charge`)
+
+
+s <- rs1920 %>% select(Referee, Shooting)
+s$type = "Shooting"
+s <- s %>% rename(z = Shooting)
+
+
+t <- rs1920 %>% select(Referee, Technical)
+t$type = "Technical"
+t <- t %>% rename(z = Technical)
+
+
+of <- rs1920 %>% select(Referee, Offensive)
+of$type = "Offensive"
+of <- of %>% rename(z = Offensive)
+
+
+d <- rs1920 %>% select(Referee, Def_3_seconds)
+d$type = "Def_3_seconds"
+d <- d %>% rename(z = Def_3_seconds)
+
+allfouls <- rbind(a, d, l, o, of, p, s, t)
+
+#quick plot
+allfouls %>% ggplot(aes(x = z, y = type)) + geom_jitter(height = .03)
+
+#get just playoff refs
+refs <- p1920$Referee #list of just playoff refs
+
+playoffs <- allfouls %>% filter(Referee %in% refs) #just get playoff refs performance in the season
+
+playoffs %>% ggplot(aes(x = z, y = type)) + geom_jitter(height = .03)
+
+allfouls$playoff = if_else(allfouls$Referee %in% refs, "playoffs", "no playoffs")
+
+```
