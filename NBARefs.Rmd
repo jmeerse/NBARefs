@@ -9,6 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
+library(ggthemes)
 
 
 ```
@@ -105,8 +106,30 @@ refs <- p1920$Referee #list of just playoff refs
 
 playoffs <- allfouls %>% filter(Referee %in% refs) #just get playoff refs performance in the season
 
-playoffs %>% ggplot(aes(x = z, y = type)) + geom_jitter(height = .03)
 
-allfouls$playoff = if_else(allfouls$Referee %in% refs, "playoffs", "no playoffs")
+allfouls$playoff = if_else(allfouls$Referee %in% refs,
+                           "playoffs", 
+                           "no playoffs"
+                           ) 
+#this would keep original, classifying if playoff ref or not
 
+
+playoffs %>% ggplot(aes(x = z, y = rev(type), color = type)) + 
+  geom_jitter(height = .03) +
+  theme_wsj() +
+  labs(title = "Fouls and Violations Called Per Game By Referee",
+       subtitle = "Among the 32 playoff referees  |  Data based on the 2019-20 regular season",
+       caption = "@jmeerse  | data from NBARefDatabase by Owen Phillips",
+       x = "Normalized Per Game Value (Z-Score)",
+       ) + 
+  theme(
+    plot.title = element_text(size = 18),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 6),
+    axis.title.x = element_text(size = 10),
+    axis.text.y = element_blank(),
+    legend.title = element_blank()
+    ) +
+  facet_wrap(~ Referee)
+  
 ```
