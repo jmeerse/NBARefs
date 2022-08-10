@@ -131,5 +131,36 @@ playoffs %>% ggplot(aes(x = z, y = rev(type), color = type)) +
     legend.title = element_blank()
     ) +
   facet_wrap(~ Referee)
-  
+
+ggsave("playoffrefs.png", width = 8, height = 8, units = "in", dpi = 300)
+
+```
+
+#functions
+```{r}
+p1920 <- p1920 %>% select(Season, Referee, Games, `Total fouls`,  Personal, `Loose ball`, `Offensive charge`, Shooting, Technical, `Defensive 3 seconds`, Offensive)
+
+p1920 <- p1920 %>% rename(Total_fouls =`Total fouls`, Loose_ball = `Loose ball`, Off_charge = `Offensive charge`, Def_3_seconds = `Defensive 3 seconds`)
+
+names(p1920)
+vnames <- c("Total_fouls", "Personal", "Loose_ball", "Off_charge", "Shooting", "Technical", "Def_3_seconds", "Offensive")
+
+#use functions instead of repeatedly transforming
+per_game <- function(x) {
+  x / p1920$Games
+}
+
+z <- function(x) {
+  (x - mean(x, na.rm = TRUE)) / sd(x) 
+}
+
+p1920a <- as.data.frame(apply(p1920[,c(4:11)], MARGIN = 2, FUN = per_game))
+
+p1920a <- as.data.frame(apply(p1920a, MARGIN = 2, FUN = z))
+
+play1920 <- cbind(p1920[1:3], p1920a)
+
+
+
+
 ```
