@@ -37,7 +37,7 @@ rs1920 %>% ggplot(aes(x = Games)) + geom_dotplot()
 
 rs1920 <- rs1920 %>% filter(Games > 20)
 
-#convert everything to fouls per game
+#convert everything to fouls per game - see below for an easier way with a function
 rs1920$All_fouls = rs1920$`Total fouls` / rs1920$Games
 rs1920$Personal = rs1920$Personal / rs1920$Games
 rs1920$`Loose ball` = rs1920$`Loose ball` / rs1920$Games
@@ -113,7 +113,7 @@ allfouls$playoff = if_else(allfouls$Referee %in% refs,
                            ) 
 #this would keep original, classifying if playoff ref or not
 
-
+#this graph doesn't have all other refs shown
 playoffs %>% ggplot(aes(x = z, y = rev(type), color = type)) + 
   geom_jitter(height = .03) +
   theme_wsj() +
@@ -133,6 +133,34 @@ playoffs %>% ggplot(aes(x = z, y = rev(type), color = type)) +
   facet_wrap(~ Referee)
 
 ggsave("playoffrefs.png", width = 8, height = 8, units = "in", dpi = 300)
+
+#see if we can get all refs in background
+playoffs <- playoffs %>% mutate(Ref2 = Referee)
+
+playoffs %>% ggplot(aes(x = z, y = rev(type), color = type)) +
+  geom_jitter( data=playoffs %>% dplyr::select(-Referee), aes(group=Ref2), color="grey", size=0.7, alpha=0.5, height = .03) +
+  geom_jitter( aes(color=type), size=1.5, height = 0 ) +
+  geom_vline(xintercept = 0) +
+  scale_x_continuous(breaks=seq(-1, 4, 1)) +
+  theme_wsj() +
+  labs(title = "Fouls and Violations Called Per Game By Referee",
+       subtitle = "Among the 32 playoff referees  |  Data based on the 2019-20 regular season",
+       caption = "@jmeerse  | data from NBARefDatabase by Owen Phillips",
+       x = "Normalized Per Game Value (Z-Score)",
+       ) + 
+  theme(
+    plot.title = element_text(size = 18),
+    plot.subtitle = element_text(size = 10),
+    plot.caption = element_text(size = 6),
+    axis.title.x = element_text(size = 12),
+    axis.text.y = element_blank(),
+    axis.text.x = element_text(size = 6),
+    legend.title = element_blank(),
+    panel.grid.major = element_blank(),
+    axis.line.x = element_blank()
+    ) +
+  facet_wrap(~ Referee)
+
 
 ```
 
